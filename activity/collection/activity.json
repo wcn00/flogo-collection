@@ -1,9 +1,9 @@
 {
-  "name": "Collection",
+  "name": "flogo-collection",
   "version": "0.1.0",
   "type": "flogo:activity",
   "description": "In memory storage for object aggregation",
-  "ref": "github.com/wcn00/flogo/collection",
+  "ref": "github.com/wcn00/flogo/flogo-collection",
   "author": "Wendell Nichols   wnichols@tibco.com",
   "inputs":[
     {
