@@ -10,44 +10,49 @@ import (
 
 var collectionCacheMutex sync.Mutex
 
-// Collection static structure containing all aggregations.
-type Collection struct {
+type CollectionActivity struct {
 	metadata  *activity.Metadata
-	colmap    map[string][]interface{}
 	generator *util.Generator
 }
 
-// newKey create a new collectin key
-func (collection *Collection) newKey() (string, error) {
-	if collection.generator == nil {
-		return "", fmt.Errorf("Generator not initialized")
-	}
-	return collection.generator.NextAsString(), nil
+// Collection static structure containing all aggregations.
+type Collection struct {
+	colmap map[string][]interface{}
 }
 
 var col *Collection
 
-func init() {
-	col = new(Collection)
-	col.colmap = make(map[string][]interface{})
-	gen, err := util.NewGenerator()
-	if err == nil {
-		col.generator = gen
+// newKey create a new collectin key
+func (collection *CollectionActivity) newKey() (res string, err error) {
+	if collection.generator == nil {
+		collection.generator, err = util.NewGenerator()
+		if err != nil {
+			return "", err
+		}
 	}
+	return collection.generator.NextAsString(), nil
+}
+
+func (collection *CollectionActivity) initialize() {
+	if col == nil {
+		col = new(Collection)
+		col.colmap = make(map[string][]interface{})
+	}
+
 }
 
 // NewActivity creates a new activity
 func NewActivity(metadata *activity.Metadata) activity.Activity {
-	return &Collection{metadata: metadata}
+	return &CollectionActivity{metadata: metadata}
 }
 
 // Metadata implements activity.Activity.Metadata
-func (a *Collection) Metadata() *activity.Metadata {
-	return a.metadata
+func (collection *CollectionActivity) Metadata() *activity.Metadata {
+	return collection.metadata
 }
 
 // Eval implements activity.Activity.Eval
-func (a *Collection) Eval(context activity.Context) (done bool, err error) {
+func (collection *CollectionActivity) Eval(context activity.Context) (done bool, err error) {
 
 	// do eval
 	key := context.GetInput("key")
@@ -57,7 +62,7 @@ func (a *Collection) Eval(context activity.Context) (done bool, err error) {
 	switch operation {
 	case "append":
 		if key == nil {
-			key, err = a.newKey()
+			key, err = collection.newKey()
 			if err != nil {
 				return false, fmt.Errorf("Append with no key failed to create dynamic key for reason [%s]", err)
 			}
@@ -67,25 +72,25 @@ func (a *Collection) Eval(context activity.Context) (done bool, err error) {
 				return false, fmt.Errorf("Append called with a nil object")
 			}
 		}
-		a.colmap[key.(string)] = append(a.colmap[key.(string)], object)
+		col.colmap[key.(string)] = append(col.colmap[key.(string)], object)
 
 	case "get":
 		if key == nil {
 			return false, fmt.Errorf("Get called with no key")
 		}
-		col, ok := a.colmap[key.(string)]
+		array, ok := col.colmap[key.(string)]
 		if !ok {
 			return false, fmt.Errorf("Get called for invalid key: %s", key.(string))
 		}
-		context.SetOutput("collection", col)
-		context.SetOutput("size", len(a.colmap[key.(string)]))
+		context.SetOutput("collection", array)
+		context.SetOutput("size", len(col.colmap[key.(string)]))
 		return true, nil
 
 	case "delete":
 		if key == nil {
 			return false, fmt.Errorf("Get called with no key")
 		}
-		delete(a.colmap, key.(string))
+		delete(col.colmap, key.(string))
 
 	default:
 
