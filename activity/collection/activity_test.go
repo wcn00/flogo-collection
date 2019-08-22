@@ -1,33 +1,43 @@
 package collection
 
 import (
-	"io/ioutil"
 	"testing"
 
-	"github.com/TIBCOSoftware/flogo-contrib/action/flow/test"
-	"github.com/TIBCOSoftware/flogo-lib/core/activity"
+	"github.com/project-flogo/core/activity"
+	"github.com/project-flogo/core/support/test"
+	"github.com/stretchr/testify/assert"
 )
 
 var activityMetadata *activity.Metadata
 
-func getActivityMetadata() *activity.Metadata {
+func TestRegister(t *testing.T) {
 
-	if activityMetadata == nil {
-		jsonMetadataBytes, err := ioutil.ReadFile("activity.json")
-		if err != nil {
-			panic("No Json Metadata found for activity.json path")
-		}
+	ref := activity.GetRef(&CollectionActivity{})
+	act := activity.Get(ref)
 
-		activityMetadata = activity.NewMetadata(string(jsonMetadataBytes))
-	}
-
-	return activityMetadata
+	assert.NotNil(t, act)
 }
+
+// func getActivityMetadata() *activity.Metadata {
+
+// 	if activityMetadata == nil {
+// 		jsonMetadataBytes, err := ioutil.ReadFile("activity.json")
+// 		if err != nil {
+// 			panic("No Json Metadata found for activity.json path")
+// 		}
+
+// 		activityMetadata = activity.NewMetadata(string(jsonMetadataBytes))
+// 	}
+
+// 	return activityMetadata
+// }
 
 func TestCreate(t *testing.T) {
 
-	act := NewActivity(getActivityMetadata())
+	settings := &Settings{operation: "append"}
+	iCtx := test.NewActivityInitContext(settings, nil)
 
+	act, err := New(iCtx)
 	if act == nil {
 		t.Error("Activity Not Created")
 		t.Fail()
@@ -45,6 +55,7 @@ func TestEval(t *testing.T) {
 	}()
 
 	act := NewActivity(getActivityMetadata())
+
 	tc := test.NewTestActivityContext(getActivityMetadata())
 
 	//setup attrs

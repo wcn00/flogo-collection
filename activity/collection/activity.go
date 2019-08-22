@@ -4,46 +4,40 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/TIBCOSoftware/flogo-lib/core/activity"
-	"github.com/TIBCOSoftware/flogo-lib/util"
+	"github.com/project-flogo/core/activity"
+	"github.com/project-flogo/core/support"
 )
 
 var collectionCacheMutex sync.Mutex
 
 type CollectionActivity struct {
-	metadata  *activity.Metadata
-	generator *util.Generator
+	metadata *activity.Metadata
 }
 
 // Collection static structure containing all aggregations.
 type Collection struct {
-	colmap map[string][]interface{}
+	colmap    map[string][]interface{}
+	generator *support.Generator
 }
 
 var col *Collection
 
+func init() {
+	col = new(Collection)
+	col.colmap = make(map[string][]interface{})
+	col.generator, _ = support.NewGenerator()
+	_ = activity.Register(&CollectionActivity{})
+}
+
 // newKey create a new collectin key
 func (collection *CollectionActivity) newKey() (res string, err error) {
-	if collection.generator == nil {
-		collection.generator, err = util.NewGenerator()
+	if col.generator == nil {
+		col.generator, err = support.NewGenerator()
 		if err != nil {
-			return "", err
+			return "", fmt.Errorf("Failed to generate a dynamic key for collection for reason [%s]", err)
 		}
 	}
-	return collection.generator.NextAsString(), nil
-}
-
-func (collection *CollectionActivity) initialize() {
-	if col == nil {
-		col = new(Collection)
-		col.colmap = make(map[string][]interface{})
-	}
-
-}
-
-// NewActivity creates a new activity
-func NewActivity(metadata *activity.Metadata) activity.Activity {
-	return &CollectionActivity{metadata: metadata}
+	return col.generator.NextAsString(), nil
 }
 
 // Metadata implements activity.Activity.Metadata
@@ -53,6 +47,8 @@ func (collection *CollectionActivity) Metadata() *activity.Metadata {
 
 // Eval implements activity.Activity.Eval
 func (collection *CollectionActivity) Eval(context activity.Context) (done bool, err error) {
+	collectionCacheMutex.Lock()
+	defer collectionCacheMutex.Unlock()
 
 	// do eval
 	key := context.GetInput("key")
