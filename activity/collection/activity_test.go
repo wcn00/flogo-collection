@@ -1,4 +1,4 @@
-package collection
+package flogo-collection
 
 import (
 	"io/ioutil"
