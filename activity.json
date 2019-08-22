@@ -1,20 +1,44 @@
 {
-  "name": "collection",
-  "version": "0.0.1",
+  "name": "Collection",
+  "version": "0.1.0",
   "type": "flogo:activity",
-  "description": "activity description",
-  "ref": "github.com/yourusername/yourrepository",
-  "author": "Your Name <you.name@example.org>",
+  "description": "In memory storage for object aggregation",
+  "ref": "github.com/wcn00/flogo/collection",
+  "author": "Wendell Nichols   wnichols@tibco.com",
   "inputs":[
     {
-      "name": "input",
-      "type": "string"
+      "name": "key",
+      "type": "string",
+      "description":"Key; required for get.  If not provided for append a new dynamic key will be created and returned."
+    },
+    {
+      "name": "operation",
+      "type": "string",
+      "required": true,
+      "allowed": ["append,get,delete"],
+      "description":"append: add an object to the collection by key.  get: get the collection by key.  delete: delete the collection to free memory"
+    },
+    {
+      "name": "object",
+      "type": "any",
+      "description":"A member of the object typical of this collection.  Provided with the append operation and will be added to the collection."
     }
   ],
   "outputs": [
     {
-      "name": "output",
-      "type": "string"
+      "name": "key",
+      "type": "string",
+      "description":"Echo of the key used for this operation.  If the operation was append with no key a new collection will be created and its key returned here."
+    },
+    {
+      "name": "size",
+      "type": "integer",
+      "description":"This is the current size of the collection"
+    },
+    {
+      "name": "object",
+      "type": "any",
+      "description":"An array of objects typical of this collection"
     }
   ]
 }
