@@ -1,4 +1,4 @@
-package flogo-collection
+package collection
 
 import (
 	"fmt"
