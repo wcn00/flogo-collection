@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "type": "flogo:activity",
   "description": "In memory storage for object aggregation",
+  "title": "Collection",
   "ref": "github.com/wcn00/flogo-collection/activity/collection",
   "author": "Wendell Nichols   wnichols@tibco.com",
   "inputs":[

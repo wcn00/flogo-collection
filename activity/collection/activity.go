@@ -10,8 +10,11 @@ import (
 
 var collectionCacheMutex sync.Mutex
 
-type CollectionActivity struct {
-	metadata *activity.Metadata
+//CollectionActivity is structure for collection parms
+type Activity struct {
+	Operation string      `md:"operation"`
+	Key       string      `md:"key"`
+	Object    interface{} `md:"object"`
 }
 
 // Collection static structure containing all aggregations.
@@ -26,11 +29,11 @@ func init() {
 	col = new(Collection)
 	col.colmap = make(map[string][]interface{})
 	col.generator, _ = support.NewGenerator()
-	_ = activity.Register(&CollectionActivity{})
+	_ = activity.Register(&Activity{})
 }
 
 // newKey create a new collectin key
-func (collection *CollectionActivity) newKey() (res string, err error) {
+func (collection *Activity) newKey() (res string, err error) {
 	if col.generator == nil {
 		col.generator, err = support.NewGenerator()
 		if err != nil {
@@ -40,22 +43,24 @@ func (collection *CollectionActivity) newKey() (res string, err error) {
 	return col.generator.NextAsString(), nil
 }
 
+var collectionActivityMd = activity.ToMetadata()
+
 // Metadata implements activity.Activity.Metadata
-func (collection *CollectionActivity) Metadata() *activity.Metadata {
-	return collection.metadata
+func (collection *Activity) Metadata() *activity.Metadata {
+	return collectionActivityMd
 }
 
 // Eval implements activity.Activity.Eval
-func (collection *CollectionActivity) Eval(context activity.Context) (done bool, err error) {
+func (collection *Activity) Eval(context activity.Context) (done bool, err error) {
 	collectionCacheMutex.Lock()
 	defer collectionCacheMutex.Unlock()
 
 	// do eval
 	key := context.GetInput("key")
 	object := context.GetInput("object")
-	operation := context.GetInput("operation").(string)
+	operation := context.GetInput("operation")
 
-	switch operation {
+	switch operation.(string) {
 	case "append":
 		if key == nil {
 			key, err = collection.newKey()
@@ -63,12 +68,12 @@ func (collection *CollectionActivity) Eval(context activity.Context) (done bool,
 				return false, fmt.Errorf("Append with no key failed to create dynamic key for reason [%s]", err)
 			}
 		}
-		if object == nil {
-			if err != nil {
-				return false, fmt.Errorf("Append called with a nil object")
-			}
+		if object != nil {
+			col.colmap[key.(string)] = append(col.colmap[key.(string)], object)
 		}
-		col.colmap[key.(string)] = append(col.colmap[key.(string)], object)
+		context.SetOutput("size", len(col.colmap[key.(string)]))
+		context.SetOutput("key", key)
+		return true, nil
 
 	case "get":
 		if key == nil {
@@ -87,6 +92,8 @@ func (collection *CollectionActivity) Eval(context activity.Context) (done bool,
 			return false, fmt.Errorf("Get called with no key")
 		}
 		delete(col.colmap, key.(string))
+		context.SetOutput("size", -1)
+		return true, nil
 
 	default:
 
