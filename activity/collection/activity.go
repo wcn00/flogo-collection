@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/project-flogo/core/activity"
+	"github.com/project-flogo/core/data/coerce"
 	"github.com/project-flogo/core/support"
 )
 
@@ -15,6 +16,41 @@ type Activity struct {
 	Operation string      `md:"operation"`
 	Key       string      `md:"key"`
 	Object    interface{} `md:"object"`
+}
+
+type ActivityOutput struct {
+	Key        string        `md:"key"`
+	Collection []interface{} `md:"collection"`
+	Size       int           `md:"size"`
+}
+
+// FromMap converts the values from a map into the struct Output
+func (o *ActivityOutput) FromMap(values map[string]interface{}) error {
+	key, err := coerce.ToString(values["key"])
+	if err != nil {
+		return err
+	}
+	o.Key = key
+	collection, err := coerce.ToArray(values["collection"])
+	if err != nil {
+		return err
+	}
+	o.Collection = collection
+	size, err := coerce.ToInt(values["size"])
+	if err != nil {
+		return err
+	}
+	o.Size = size
+	return nil
+}
+
+// ToMap converts the struct Output into a map
+func (o *ActivityOutput) ToMap() map[string]interface{} {
+	return map[string]interface{}{
+		"key":    o.Key,
+		"":       o.Collection,
+		"result": o.Size,
+	}
 }
 
 // Collection static structure containing all aggregations.
@@ -59,7 +95,7 @@ func (collection *Activity) Eval(context activity.Context) (done bool, err error
 	key := context.GetInput("key")
 	object := context.GetInput("object")
 	operation := context.GetInput("operation")
-
+	output := &ActivityOutput{}
 	switch operation.(string) {
 	case "append":
 		if key == nil {
@@ -71,8 +107,10 @@ func (collection *Activity) Eval(context activity.Context) (done bool, err error
 		if object != nil {
 			col.colmap[key.(string)] = append(col.colmap[key.(string)], object)
 		}
-		context.SetOutput("size", len(col.colmap[key.(string)]))
-		context.SetOutput("key", key)
+
+		output.Size = len(col.colmap[key.(string)])
+		output.Key = key.(string)
+		context.SetOutputObject(output)
 		return true, nil
 
 	case "get":
@@ -83,8 +121,10 @@ func (collection *Activity) Eval(context activity.Context) (done bool, err error
 		if !ok {
 			return false, fmt.Errorf("Get called for invalid key: %s", key.(string))
 		}
-		context.SetOutput("collection", array)
-		context.SetOutput("size", len(col.colmap[key.(string)]))
+		output.Size = len(col.colmap[key.(string)])
+		output.Key = key.(string)
+		output.Collection = array
+		context.SetOutputObject(output)
 		return true, nil
 
 	case "delete":
@@ -92,7 +132,7 @@ func (collection *Activity) Eval(context activity.Context) (done bool, err error
 			return false, fmt.Errorf("Get called with no key")
 		}
 		delete(col.colmap, key.(string))
-		context.SetOutput("size", -1)
+		context.SetOutputObject(output)
 		return true, nil
 
 	default:
