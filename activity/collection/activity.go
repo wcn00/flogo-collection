@@ -6,23 +6,71 @@ import (
 
 	"github.com/project-flogo/core/activity"
 	"github.com/project-flogo/core/data/coerce"
+	"github.com/project-flogo/core/data/metadata"
 	"github.com/project-flogo/core/support"
 )
 
 var collectionCacheMutex sync.Mutex
 
-//CollectionActivity is structure for collection parms
-type Activity struct {
-	Operation string      `md:"operation"`
-	Key       string      `md:"key"`
-	Object    interface{} `md:"object"`
+//ActivitySettings is structure for collection parms
+type ActivitySettings struct {
+	Operation string `md:"operation"`
 }
 
+// FromMap converts the values from a map into the struct Output
+func (o *ActivitySettings) FromMap(values map[string]interface{}) error {
+	operation, err := coerce.ToString(values["operation"])
+	if err != nil {
+		return err
+	}
+	o.Operation = operation
+	return nil
+}
+
+// ToMap converts the struct Output into a map
+func (o *ActivitySettings) ToMap() map[string]interface{} {
+	return map[string]interface{}{
+		"operation": o.Operation,
+	}
+}
+
+//ActivitySettings is structure for collection parms
+type ActivityInput struct {
+	Key    string      `md:"key"`
+	Object interface{} `md:"object"`
+}
+
+// FromMap converts the values from a map into the struct Output
+func (o *ActivityInput) FromMap(values map[string]interface{}) error {
+	key, err := coerce.ToString(values["key"])
+	if err != nil {
+		return err
+	}
+	o.Key = key
+	object, err := coerce.ToObject(values["object"])
+	if err != nil {
+		return err
+	}
+	o.Object = object
+	return nil
+}
+
+// ToMap converts the struct Output into a map
+func (o *ActivityInput) ToMap() map[string]interface{} {
+	return map[string]interface{}{
+		"key":    o.Key,
+		"object": o.Object,
+	}
+}
+
+// ActivityOutput activity output
 type ActivityOutput struct {
 	Key        string        `md:"key"`
 	Collection []interface{} `md:"collection"`
 	Size       int           `md:"size"`
 }
+
+var activityMd = activity.ToMetadata(&ActivitySettings{}, &ActivityOutput{})
 
 // FromMap converts the values from a map into the struct Output
 func (o *ActivityOutput) FromMap(values map[string]interface{}) error {
@@ -47,16 +95,15 @@ func (o *ActivityOutput) FromMap(values map[string]interface{}) error {
 // ToMap converts the struct Output into a map
 func (o *ActivityOutput) ToMap() map[string]interface{} {
 	return map[string]interface{}{
-		"key":    o.Key,
-		"":       o.Collection,
-		"result": o.Size,
+		"key":        o.Key,
+		"collection": o.Collection,
+		"result":     o.Size,
 	}
 }
 
 // Collection static structure containing all aggregations.
 type Collection struct {
-	colmap    map[string][]interface{}
-	generator *support.Generator
+	colmap map[string][]interface{}
 }
 
 var col *Collection
@@ -64,22 +111,39 @@ var col *Collection
 func init() {
 	col = new(Collection)
 	col.colmap = make(map[string][]interface{})
-	col.generator, _ = support.NewGenerator()
-	_ = activity.Register(&Activity{})
+	_ = activity.Register(&Activity{}, New)
 }
 
-// newKey create a new collectin key
+// Activity base activty type
+type Activity struct {
+	operation string
+	generator *support.Generator
+}
+
 func (collection *Activity) newKey() (res string, err error) {
-	if col.generator == nil {
-		col.generator, err = support.NewGenerator()
+	if collection.generator == nil {
+		collection.generator, err = support.NewGenerator()
 		if err != nil {
 			return "", fmt.Errorf("Failed to generate a dynamic key for collection for reason [%s]", err)
 		}
 	}
-	return col.generator.NextAsString(), nil
+	return collection.generator.NextAsString(), nil
 }
 
-var collectionActivityMd = activity.ToMetadata()
+// New creates a new javascript activity
+func New(ctx activity.InitContext) (activity.Activity, error) {
+	settings := ActivitySettings{}
+	err := metadata.MapToStruct(ctx.Settings(), &settings, true)
+	if err != nil {
+		return nil, err
+	}
+	act := Activity{
+		operation: settings.Operation,
+	}
+	return &act, nil
+}
+
+var collectionActivityMd = activity.ToMetadata(&ActivitySettings{}, &ActivityOutput{})
 
 // Metadata implements activity.Activity.Metadata
 func (collection *Activity) Metadata() *activity.Metadata {
@@ -94,9 +158,8 @@ func (collection *Activity) Eval(context activity.Context) (done bool, err error
 	// do eval
 	key := context.GetInput("key")
 	object := context.GetInput("object")
-	operation := context.GetInput("operation")
 	//	output := &ActivityOutput{}
-	switch operation.(string) {
+	switch collection.operation {
 	case "append":
 		if key == nil {
 			key, err = collection.newKey()
@@ -108,8 +171,6 @@ func (collection *Activity) Eval(context activity.Context) (done bool, err error
 			col.colmap[key.(string)] = append(col.colmap[key.(string)], object)
 		}
 
-		// output.Size = len(col.colmap[key.(string)])
-		// output.Key = key.(string)
 		err = context.SetOutput("size", len(col.colmap[key.(string)]))
 		if err != nil {
 			return false, fmt.Errorf("Append failed to set output \"size\" for reason [%s]", err)
@@ -130,11 +191,7 @@ func (collection *Activity) Eval(context activity.Context) (done bool, err error
 		}
 		context.SetOutput("size", len(col.colmap[key.(string)]))
 		context.SetOutput("key", key)
-		context.SetOutput("collectin", array)
-		// output.Size = len(col.colmap[key.(string)])
-		// output.Key = key.(string)
-		// output.Collection = array
-		//		context.SetOutputObject(output)
+		context.SetOutput("collection", array)
 		return true, nil
 
 	case "delete":
@@ -143,8 +200,6 @@ func (collection *Activity) Eval(context activity.Context) (done bool, err error
 		}
 		delete(col.colmap, key.(string))
 		context.SetOutput("size", -1)
-		// output.Size = -1
-		// context.SetOutputObject(output)
 		return true, nil
 
 	default:

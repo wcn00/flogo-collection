@@ -5,11 +5,38 @@ import (
 	"testing"
 
 	"github.com/project-flogo/core/activity"
+	"github.com/project-flogo/core/data/mapper"
+	logger "github.com/project-flogo/core/support/log"
 	"github.com/project-flogo/core/support/test"
 	"github.com/stretchr/testify/assert"
 )
 
 var activityMetadata *activity.Metadata
+
+type initContext struct {
+	settings map[string]interface{}
+}
+
+func newInitContext(values map[string]interface{}) *initContext {
+	if values == nil {
+		values = make(map[string]interface{})
+	}
+	return &initContext{
+		settings: values,
+	}
+}
+
+func (i *initContext) Settings() map[string]interface{} {
+	return i.settings
+}
+
+func (i *initContext) MapperFactory() mapper.Factory {
+	return nil
+}
+
+func (i *initContext) Logger() logger.Logger {
+	return logger.RootLogger()
+}
 
 func TestRegister(t *testing.T) {
 	ref := activity.GetRef(&Activity{})
@@ -29,11 +56,17 @@ func getObj() interface{} {
 
 }
 func TestEvalAppendNokey(t *testing.T) {
-	act := &Activity{}
+	act, err := New(newInitContext(map[string]interface{}{
+		"operation": "append",
+	}))
+	if err != nil {
+		t.Errorf("Could not create initial context:  %s", err)
+		t.Fail()
+	}
+
 	tc := test.NewActivityContext(act.Metadata())
-	tc.SetInput("operation", "append")
 	tc.SetInput("object", getObj())
-	_, err := act.Eval(tc)
+	_, err = act.Eval(tc)
 	assert.Nil(t, err)
 	if err != nil {
 		t.Errorf("Could not execute activty:  %s", err)
@@ -53,9 +86,14 @@ func TestEvalAppendNokey(t *testing.T) {
 }
 
 func TestEvalAppendNoKeyOrObj(t *testing.T) {
-	act := &Activity{}
+	act, err := New(newInitContext(map[string]interface{}{
+		"operation": "append",
+	}))
+	if err != nil {
+		t.Errorf("Could not create initial context:  %s", err)
+		t.Fail()
+	}
 	tc := test.NewActivityContext(act.Metadata())
-	tc.SetInput("operation", "append")
 	ok, err := act.Eval(tc)
 	assert.Nil(t, err)
 	if err != nil {
@@ -79,9 +117,14 @@ func TestEvalAppendNoKeyOrObj(t *testing.T) {
 }
 
 func TestEvalEndToEnd(t *testing.T) {
-	act := &Activity{}
+	act, err := New(newInitContext(map[string]interface{}{
+		"operation": "append",
+	}))
+	if err != nil {
+		t.Errorf("Could not create initial context:  %s", err)
+		t.Fail()
+	}
 	tc := test.NewActivityContext(act.Metadata())
-	tc.SetInput("operation", "append")
 	ok, err := act.Eval(tc)
 	assert.Nil(t, err)
 	if err != nil {
@@ -147,7 +190,9 @@ func TestEvalEndToEnd(t *testing.T) {
 	}
 
 	//Get the collection
-	tc.SetInput("operation", "get")
+	act, err = New(newInitContext(map[string]interface{}{
+		"operation": "get",
+	}))
 	tc.SetInput("key", key)
 	ok, err = act.Eval(tc)
 	assert.Nil(t, err)
@@ -168,8 +213,10 @@ func TestEvalEndToEnd(t *testing.T) {
 		t.Fail()
 	}
 
-	//Get the collection
-	tc.SetInput("operation", "delete")
+	//Delete the collection
+	act, err = New(newInitContext(map[string]interface{}{
+		"operation": "delete",
+	}))
 	tc.SetInput("key", key)
 	ok, err = act.Eval(tc)
 	assert.Nil(t, err)

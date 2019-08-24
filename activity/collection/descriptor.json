@@ -8,17 +8,19 @@
   "author": "Wendell Nichols   wnichols@tibco.com",
   "settings":[
     {
-      "name": "key",
-      "type": "string",
-      "description":"Key; required for get.  If not provided for append a new dynamic key will be created and returned."
-    },
-    {
       "name": "operation",
       "type": "string",
       "required": true,
       "value": "get",
       "allowed": ["append","get","delete"],
       "description":"append: add an object to the collection by key.  get: get the collection by key.  delete: delete the collection to free memory"
+    }
+  ],
+  "inputs":[
+    {
+      "name": "key",
+      "type": "string",
+      "description":"Key; required for get.  If not provided for append a new dynamic key will be created and returned."
     },
     {
       "name": "object",
@@ -26,7 +28,7 @@
       "description":"A member of the object typical of this collection.  Provided with the append operation and will be added to the collection."
     }
   ],
-  "output": [
+  "outputs": [
     {
       "name": "key",
       "type": "string",
