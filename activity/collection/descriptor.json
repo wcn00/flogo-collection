@@ -17,7 +17,7 @@
       "type": "string",
       "required": true,
       "value": "get",
-      "allowed": ["append,get,delete"],
+      "allowed": ["append","get","delete"],
       "description":"append: add an object to the collection by key.  get: get the collection by key.  delete: delete the collection to free memory"
     },
     {
