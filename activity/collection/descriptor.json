@@ -6,7 +6,7 @@
   "title": "Collection",
   "homepage": "https://github.com/wcn00/flogo-collection/activity/collection",
   "author": "Wendell Nichols   wnichols@tibco.com",
-  "input":[
+  "settings":[
     {
       "name": "key",
       "type": "string",
