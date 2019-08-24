@@ -95,7 +95,7 @@ func (collection *Activity) Eval(context activity.Context) (done bool, err error
 	key := context.GetInput("key")
 	object := context.GetInput("object")
 	operation := context.GetInput("operation")
-	output := &ActivityOutput{}
+	//	output := &ActivityOutput{}
 	switch operation.(string) {
 	case "append":
 		if key == nil {
@@ -108,9 +108,10 @@ func (collection *Activity) Eval(context activity.Context) (done bool, err error
 			col.colmap[key.(string)] = append(col.colmap[key.(string)], object)
 		}
 
-		output.Size = len(col.colmap[key.(string)])
-		output.Key = key.(string)
-		context.SetOutputObject(output)
+		// output.Size = len(col.colmap[key.(string)])
+		// output.Key = key.(string)
+		context.SetOutput("size", len(col.colmap[key.(string)]))
+		context.SetOutput("key", key)
 		return true, nil
 
 	case "get":
@@ -121,10 +122,13 @@ func (collection *Activity) Eval(context activity.Context) (done bool, err error
 		if !ok {
 			return false, fmt.Errorf("Get called for invalid key: %s", key.(string))
 		}
-		output.Size = len(col.colmap[key.(string)])
-		output.Key = key.(string)
-		output.Collection = array
-		context.SetOutputObject(output)
+		context.SetOutput("size", len(col.colmap[key.(string)]))
+		context.SetOutput("key", key)
+		context.SetOutput("collectin", array)
+		// output.Size = len(col.colmap[key.(string)])
+		// output.Key = key.(string)
+		// output.Collection = array
+		//		context.SetOutputObject(output)
 		return true, nil
 
 	case "delete":
@@ -132,7 +136,9 @@ func (collection *Activity) Eval(context activity.Context) (done bool, err error
 			return false, fmt.Errorf("Get called with no key")
 		}
 		delete(col.colmap, key.(string))
-		context.SetOutputObject(output)
+		context.SetOutput("size", -1)
+		// output.Size = -1
+		// context.SetOutputObject(output)
 		return true, nil
 
 	default:
