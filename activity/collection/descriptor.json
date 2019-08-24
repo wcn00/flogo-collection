@@ -6,7 +6,7 @@
   "title": "Collection",
   "homepage": "https://github.com/wcn00/flogo-collection/activity/collection",
   "author": "Wendell Nichols   wnichols@tibco.com",
-  "inputs":[
+  "input":[
     {
       "name": "key",
       "type": "string",
@@ -26,7 +26,7 @@
       "description":"A member of the object typical of this collection.  Provided with the append operation and will be added to the collection."
     }
   ],
-  "outputs": [
+  "output": [
     {
       "name": "key",
       "type": "string",
