@@ -110,8 +110,14 @@ func (collection *Activity) Eval(context activity.Context) (done bool, err error
 
 		// output.Size = len(col.colmap[key.(string)])
 		// output.Key = key.(string)
-		context.SetOutput("size", len(col.colmap[key.(string)]))
-		context.SetOutput("key", key)
+		err = context.SetOutput("size", len(col.colmap[key.(string)]))
+		if err != nil {
+			return false, fmt.Errorf("Append failed to set output \"size\" for reason [%s]", err)
+		}
+		err = context.SetOutput("key", key)
+		if err != nil {
+			return false, fmt.Errorf("Append failed to set output \"key\" for reason [%s]", err)
+		}
 		return true, nil
 
 	case "get":
