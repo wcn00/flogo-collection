@@ -161,7 +161,7 @@ func (collection *Activity) Eval(context activity.Context) (done bool, err error
 	//	output := &ActivityOutput{}
 	switch collection.operation {
 	case "append":
-		if key == nil {
+		if key == nil || len(key.(string)) == 0 {
 			key, err = collection.newKey()
 			if err != nil {
 				return false, fmt.Errorf("Append with no key failed to create dynamic key for reason [%s]", err)
