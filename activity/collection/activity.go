@@ -97,7 +97,7 @@ func (o *Output) ToMap() map[string]interface{} {
 	return map[string]interface{}{
 		"key":        o.Key,
 		"collection": o.Collection,
-		"result":     o.Size,
+		"size":       o.Size,
 	}
 }
 
