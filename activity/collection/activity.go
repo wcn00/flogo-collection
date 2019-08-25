@@ -13,12 +13,12 @@ import (
 var collectionCacheMutex sync.Mutex
 
 //ActivitySettings is structure for collection parms
-type ActivitySettings struct {
+type Settings struct {
 	Operation string `md:"operation"`
 }
 
 // FromMap converts the values from a map into the struct Output
-func (o *ActivitySettings) FromMap(values map[string]interface{}) error {
+func (o *Settings) FromMap(values map[string]interface{}) error {
 	operation, err := coerce.ToString(values["operation"])
 	if err != nil {
 		return err
@@ -28,7 +28,7 @@ func (o *ActivitySettings) FromMap(values map[string]interface{}) error {
 }
 
 // ToMap converts the struct Output into a map
-func (o *ActivitySettings) ToMap() map[string]interface{} {
+func (o *Settings) ToMap() map[string]interface{} {
 	return map[string]interface{}{
 		"operation": o.Operation,
 	}
@@ -64,16 +64,16 @@ func (o *ActivityInput) ToMap() map[string]interface{} {
 }
 
 // ActivityOutput activity output
-type ActivityOutput struct {
+type Output struct {
 	Key        string        `md:"key"`
 	Collection []interface{} `md:"collection"`
 	Size       int           `md:"size"`
 }
 
-var activityMd = activity.ToMetadata(&ActivitySettings{}, &ActivityOutput{})
+var activityMd = activity.ToMetadata(&Settings{}, &Output{})
 
 // FromMap converts the values from a map into the struct Output
-func (o *ActivityOutput) FromMap(values map[string]interface{}) error {
+func (o *Output) FromMap(values map[string]interface{}) error {
 	key, err := coerce.ToString(values["key"])
 	if err != nil {
 		return err
@@ -93,7 +93,7 @@ func (o *ActivityOutput) FromMap(values map[string]interface{}) error {
 }
 
 // ToMap converts the struct Output into a map
-func (o *ActivityOutput) ToMap() map[string]interface{} {
+func (o *Output) ToMap() map[string]interface{} {
 	return map[string]interface{}{
 		"key":        o.Key,
 		"collection": o.Collection,
@@ -132,7 +132,7 @@ func (collection *Activity) newKey() (res string, err error) {
 
 // New creates a new javascript activity
 func New(ctx activity.InitContext) (activity.Activity, error) {
-	settings := ActivitySettings{}
+	settings := Settings{}
 	err := metadata.MapToStruct(ctx.Settings(), &settings, true)
 	if err != nil {
 		return nil, err
@@ -143,7 +143,7 @@ func New(ctx activity.InitContext) (activity.Activity, error) {
 	return &act, nil
 }
 
-var collectionActivityMd = activity.ToMetadata(&ActivitySettings{}, &ActivityOutput{})
+var collectionActivityMd = activity.ToMetadata(&Settings{}, &Output{})
 
 // Metadata implements activity.Activity.Metadata
 func (collection *Activity) Metadata() *activity.Metadata {
